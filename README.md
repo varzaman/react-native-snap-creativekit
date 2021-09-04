@@ -12,6 +12,11 @@ npm install react-native-snap-creativekit
 
 ## Usage
 
+### Features supported
+- share sticker by URL
+- share lenses
+- ability to add captions and attachment Urls to a snap
+
 ```js
 import SnapCreativekit from "react-native-snap-creativekit";
 
