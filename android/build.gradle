@@ -55,6 +55,10 @@ repositories {
   jcenter()
   google()
 
+  maven {
+    url "https://storage.googleapis.com/snap-kit-build/maven"
+  }
+
   def found = false
   def defaultDir = null
   def androidSourcesName = 'React Native sources'
@@ -127,4 +131,8 @@ dependencies {
   // noinspection GradleDynamicVersion
   api 'com.facebook.react:react-native:+'
   implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+  implementation([
+    'com.snapchat.kit.sdk:creative:1.10.0',
+    'com.snapchat.kit.sdk:core:1.10.0'
+  ])
 }

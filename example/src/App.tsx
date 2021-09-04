@@ -12,11 +12,9 @@ export default function App() {
     };
 
     try {
-      await SnapCreativekit.shareMedia(
-        'https://clipart.info/images/minicovers/1522852544cute-cat-png-image-download-picture-kitten.png',
-        undefined,
-        options
-      );
+      let url =
+        'https://clipart.info/images/minicovers/1522852544cute-cat-png-image-download-picture-kitten.png';
+      await SnapCreativekit.shareMedia(url, undefined, options);
       setResult((result || 0) + 1);
     } catch (e) {
       console.log(e);
