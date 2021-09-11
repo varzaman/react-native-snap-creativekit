@@ -45,7 +45,7 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      {renderButton('Share Lens', onLensPress)}
+      {renderButton('Share lens', onLensPress)}
       {renderButton('Share sticker', onStickerPress)}
     </View>
   );
@@ -65,5 +65,9 @@ const styles = StyleSheet.create({
   button: {
     height: 50,
     width: 100,
+    backgroundColor: '#CCCC',
+    marginBottom: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

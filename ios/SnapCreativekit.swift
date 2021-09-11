@@ -7,20 +7,15 @@ class SnapCreativekit: NSObject {
     override init() {
       snapAPI = SCSDKSnapAPI()
     }
-    
-    @objc(multiply:withB:withResolver:withRejecter:)
-    func multiply(a: Float, b: Float, resolve:RCTPromiseResolveBlock,reject:RCTPromiseRejectBlock) -> Void {
-        resolve(a*b)
-    }
 
-    func sharePhoto( url: String) -> SCSDKPhotoSnapContent {
+    func createPhoto( url: String) -> SCSDKPhotoSnapContent {
         let photoUrl: URL = URL(string: url)!
         let photo = SCSDKSnapPhoto(imageUrl: photoUrl)
         let photoContent = SCSDKPhotoSnapContent(snapPhoto: photo)
         return photoContent
     }
     
-    func shareVideo( url: String) -> SCSDKVideoSnapContent {
+    func createVideo( url: String) -> SCSDKVideoSnapContent {
         let videoUrl: URL = URL(string: url)!
         let video = SCSDKSnapVideo(videoUrl: videoUrl)
         let videoContent = SCSDKVideoSnapContent(snapVideo: video)
@@ -34,7 +29,7 @@ class SnapCreativekit: NSObject {
         return sticker
     }
     
-    func shareNoContent(_ sticker: SCSDKSnapSticker?, _ caption: String?, _ attachmentUrl: String?) -> SCSDKNoSnapContent {
+    func createNoContent(_ sticker: SCSDKSnapSticker?, _ caption: String?, _ attachmentUrl: String?) -> SCSDKNoSnapContent {
         let snap = SCSDKNoSnapContent()
         
         snap.sticker = sticker
@@ -44,18 +39,49 @@ class SnapCreativekit: NSObject {
         return snap
     }
     
-    func shareLens (_ lensUUID: String, _ caption: String?, _ attachmentUrl: String?) -> SCSDKLensSnapContent {
+    func createLens (_ lensUUID: String,
+                    _ caption: String?,
+                    _ attachmentUrl: String?,
+                    _ launchData: NSDictionary? ) -> SCSDKLensSnapContent {
         let snap = SCSDKLensSnapContent(lensUUID: lensUUID)
         snap.caption = caption
         snap.attachmentUrl = attachmentUrl
         
+        if (launchData != nil) {
+            let launchDataBuilder = SCSDKLensLaunchDataBuilder()
+
+            for (key, value) in launchData! {
+                launchDataBuilder.addNSStringKeyPair(key as! String, value: value as! String)
+            }
+            snap.launchData = SCSDKLensLaunchData(builder: launchDataBuilder)
+        }
         return snap
+    }
+    
+    @objc
+    func shareLens(_ uuid: String,
+                   options: [String: String]?,
+                   launchData: NSDictionary?,
+                   resolver resolve: @escaping RCTPromiseResolveBlock,
+                   rejecter reject: @escaping RCTPromiseRejectBlock) -> Void {
+        shareMedia(nil, uuid, options, launchData, resolver: resolve, rejecter: reject)
+    }
+    
+    @objc
+    func shareSticker(_ url: String,
+                      options: [String: String]?,
+                      resolver resolve: @escaping RCTPromiseResolveBlock,
+                      rejecter reject: @escaping RCTPromiseRejectBlock) -> Void {
+        shareMedia(url, nil, options, nil, resolver: resolve, rejecter: reject)
     }
 
     @objc
-    func shareMedia(_ url: String?, uuid: String?, options: [String: String]?,
-                    resolver resolve: @escaping RCTPromiseResolveBlock,
-                    rejecter reject: @escaping RCTPromiseRejectBlock) -> Void {
+    func shareMedia(_ url: String?,
+                   _ uuid: String?,
+                   _ options: [String: String]?,
+                   _ launchData: NSDictionary?,
+                   resolver resolve: @escaping RCTPromiseResolveBlock,
+                   rejecter reject: @escaping RCTPromiseRejectBlock) -> Void {
         let snap: SCSDKSnapContent;
         let caption = options?["caption"] ?? nil
         let attachmentURL = options?["attachmentUrl"] ?? nil
@@ -63,20 +89,19 @@ class SnapCreativekit: NSObject {
         if (url != nil) {
             let sticker = createSticker(url!)
 
-            snap = shareNoContent(sticker, caption, attachmentURL)
+            snap = createNoContent(sticker, caption, attachmentURL)
             
         } else if (uuid != nil) {
-            snap = shareLens(uuid!, caption, nil)
+            snap = createLens(uuid!, caption, attachmentURL, launchData)
         }
          else {
-            snap = shareNoContent(nil, caption, attachmentURL)
+            snap = createNoContent(nil, caption, attachmentURL)
         }
                 
         DispatchQueue.main.async {
             self.snapAPI?.startSending(snap) { [weak self] (error: Error?) in
                 if (error != nil) {
-                    print(error)
-                    reject("Error", "Unknown Error", error)
+                    reject("Error", "Unknown Error: " + error!.localizedDescription, error)
                 } else {
                     resolve(nil);
                 }
