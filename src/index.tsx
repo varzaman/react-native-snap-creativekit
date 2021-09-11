@@ -5,9 +5,21 @@ export interface SnapOptions {
   attachmentUrl?: string;
 }
 
+export interface LaunchData {
+  hint?: string;
+}
+
 type SnapCreativekitType = {
-  multiply(a: number, b: number): Promise<number>;
   shareMedia(url?: string, uuid?: string, options?: SnapOptions): Promise<void>;
+  shareLens(
+    uuid: string,
+    options: SnapOptions | null | undefined,
+    launchData: LaunchData | null | undefined
+  ): Promise<void>;
+  shareSticker(
+    url: string,
+    options: SnapOptions | null | undefined
+  ): Promise<void>;
 };
 
 const { SnapCreativekit } = NativeModules;

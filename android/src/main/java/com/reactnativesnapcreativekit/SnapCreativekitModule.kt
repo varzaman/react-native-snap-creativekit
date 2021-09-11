@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import com.facebook.react.bridge.*
 import com.snapchat.kit.sdk.SnapCreative
+import com.snapchat.kit.sdk.creative.media.SnapLensLaunchData
 import com.snapchat.kit.sdk.creative.media.SnapMediaFactory
 import com.snapchat.kit.sdk.creative.media.SnapSticker
 import com.snapchat.kit.sdk.creative.models.SnapContent
@@ -19,8 +20,30 @@ class SnapCreativekitModule(reactContext: ReactApplicationContext) : ReactContex
       return "SnapCreativekit"
   }
 
-  private fun shareLenses(lensUUID: String, caption: String?, attachmentUrl: String?): SnapLensContent {
-    val snap: SnapLensContent = SnapLensContent.createSnapLensContent(lensUUID, null)
+  private fun buildLaunchData(launchConfig: ReadableMap): SnapLensLaunchData? {
+    val builder = SnapLensLaunchData.Builder()
+    val iterator = launchConfig.keySetIterator()
+
+    while(iterator.hasNextKey()) {
+      val key = iterator.nextKey()
+      when(launchConfig.getType(key)) {
+        ReadableType.String -> launchConfig.getString(key)?.let { builder.addStringKeyPair(key, it) }
+        ReadableType.Number -> launchConfig.getInt(key)?.let { builder.addNumberKeyPair(key, it) }
+      }
+    }
+    return builder.build();
+  }
+
+  private fun createLenses(lensUUID: String,
+                           caption: String?,
+                           attachmentUrl: String?,
+                           launchConfig: ReadableMap?): SnapLensContent {
+    var launchData: SnapLensLaunchData? = null
+    if (launchConfig != null) {
+      launchData = buildLaunchData(launchConfig)
+    }
+
+    val snap: SnapLensContent = SnapLensContent.createSnapLensContent(lensUUID, launchData)
     snap.captionText = caption
     snap.attachmentUrl = attachmentUrl
 
@@ -45,7 +68,7 @@ class SnapCreativekitModule(reactContext: ReactApplicationContext) : ReactContex
     }
   }
 
-  private fun shareNonContentSnap(sticker: SnapSticker?, caption: String?, attachmentUrl: String?): SnapLiveCameraContent {
+  private fun createNonContentSnap(sticker: SnapSticker?, caption: String?, attachmentUrl: String?): SnapLiveCameraContent {
     val snap = SnapLiveCameraContent()
     snap.snapSticker = sticker
     snap.captionText = caption
@@ -54,9 +77,22 @@ class SnapCreativekitModule(reactContext: ReactApplicationContext) : ReactContex
     return snap
   }
 
+  @ReactMethod
+  fun shareLens(uuid: String?, options: ReadableMap?, launchData: ReadableMap?, promise: Promise) {
+    shareMedia(null, uuid, options, launchData, promise);
+  }
 
   @ReactMethod
-  fun shareMedia(url: String?, uuid: String?, options: ReadableMap?, promise: Promise ) {
+  fun shareSticker(url: String?, options: ReadableMap?, promise: Promise) {
+    shareMedia(url, null, options, null, promise);
+  }
+
+  @ReactMethod
+  fun shareMedia(url: String?,
+                 uuid: String?,
+                 options: ReadableMap?,
+                 launchData: ReadableMap?,
+                 promise: Promise ) {
     try {
       val caption =
         if (options?.hasKey("caption") == true) options.getString("caption") else null
@@ -69,11 +105,11 @@ class SnapCreativekitModule(reactContext: ReactApplicationContext) : ReactContex
 
       snap = if (url != null && snapFactory != null) {
         val sticker = createSticker(snapFactory, url)
-        shareNonContentSnap(sticker, caption, attachmentUrl)
+        createNonContentSnap(sticker, caption, attachmentUrl)
       } else if (uuid != null) {
-        shareLenses(uuid, caption, attachmentUrl)
+        createLenses(uuid, caption, attachmentUrl, launchData)
       } else {
-        shareNonContentSnap(null, null, null)
+        createNonContentSnap(null, null, null)
       }
 
       api?.send(snap)
